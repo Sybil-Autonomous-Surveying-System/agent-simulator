@@ -48,6 +48,7 @@ namespace Sybil
 
         private Vector3 destination;
         private bool destinationBool = false;
+        private bool softBlock = true;
         // Start is called before the first frame update
         void Start()
         {
@@ -102,16 +103,59 @@ namespace Sybil
         // based on x,y,z coordinate to move to that specific location
         void directedControlOrchestrator()
         {
+            
             if (destinationBool)
             {
-                if (rb.position.y < destination.y)
+                Vector3 _direction = (new Vector3(destination.x,0, destination.z) - new Vector3 (rb.position.x,0,rb.position.z)).normalized;
+                Quaternion _lookRotation = Quaternion.LookRotation(_direction);
+                if ((int)rb.position.y < destination.y)
                 {
                     input.Throttle = 1;
                 }
-                else if (rb.position.y >= destination.y)
+                else if ((int)rb.position.y > destination.y)
                 {
-                    input.Throttle = 0;
+                    input.Throttle = -0.5f;
                 }
+                else if ((int)rb.position.y == destination.y)
+                {
+                    if (softBlock|| ((int)rb.position.x == destination.x) || ((int)rb.position.z == destination.z))
+                    {
+                        rb.angularVelocity = Vector3.zero;
+                        rb.velocity = Vector3.zero;
+                        softBlock = false;
+                        input.Cyclic = new Vector2(0, 0);
+                        input.Pedals = 0;
+                    }
+                    input.Throttle = 0;
+                    if (_lookRotation.y > (rb.rotation.y + .005f))
+                    {
+                        input.Pedals = .5f;
+                    }
+                    else if (_lookRotation.y < (rb.rotation.y - .005f))
+                    {
+                        input.Pedals = -.5f;
+                    }
+                    else
+                    {
+                        input.Pedals = 0;
+                        if (((int)rb.position.x == destination.x) || ((int)rb.position.z == destination.z)) 
+                        {
+                            rb.angularVelocity = Vector3.zero;
+                            rb.velocity = Vector3.zero;
+                            input.Cyclic = new Vector2(0, 0);
+
+                        }
+                        else if ((Mathf.Abs((int)rb.position.x) - Mathf.Abs(destination.x) > 0) && (Mathf.Abs((int)rb.position.z) - Mathf.Abs(destination.z) > 0))
+                        {
+                            input.Cyclic = new Vector2(0,-1);
+                        }
+                        else if ((Mathf.Abs((int)rb.position.x) - Mathf.Abs(destination.x) < 0) && (Mathf.Abs((int)rb.position.z) - Mathf.Abs(destination.z) < 0))
+                        {
+                            input.Cyclic = new Vector2(0, 1);
+                        }
+                    }
+                }
+
             }
         }
 
@@ -122,7 +166,6 @@ namespace Sybil
             //X made negative
             float roll = -input.Cyclic.x * minMaxRoll;
             yaw += input.Pedals * yawPower;
-
             finalPitch = Mathf.Lerp(finalPitch, pitch, Time.deltaTime * lerpSpeed);
             finalRoll = Mathf.Lerp(finalRoll, roll, Time.deltaTime * lerpSpeed);
             finalYaw = Mathf.Lerp(finalYaw, yaw, Time.deltaTime * lerpSpeed);
@@ -141,13 +184,12 @@ namespace Sybil
                     data = socket.Receive(ref ipAddressEndPoint);
                     dataString = Encoding.UTF8.GetString(data);
 
-                    Debug.Log(dataString);
                     JsonVector jsonvector = JsonConvert.DeserializeObject<JsonVector>(dataString);
                     //input.Cyclic = new Vector2(input.Cyclic.x,1);
                     //
                     //List<string> jsonToArray = JsonConvert.DeserializeObject<List<string>>(dataString);
                     var jsonData = JsonConvert.DeserializeObject<Dictionary<string, List<float>>>(dataString);
-                    Debug.Log(jsonData["vector"]);
+
                     //List<string> vector = jsonData["vector"][0].Value<List<string>>();
                     destination = new Vector3(jsonData["vector"][0], jsonData["vector"][1], jsonData["vector"][2]);
                     destinationBool = true;

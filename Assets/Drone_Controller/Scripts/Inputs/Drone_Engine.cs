@@ -33,7 +33,6 @@ namespace Sybil
             Vector3 engineForce = Vector3.zero;
             engineForce = transform.up * ((rb.mass * Physics.gravity.magnitude + finalDiff)  + (input.Throttle * maxPower))/4f;
             rb.AddForce(engineForce, ForceMode.Force);
-
             // induce psuedo drag 
             if (input.Throttle == 0)
             {
