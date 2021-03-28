@@ -1,0 +1,74 @@
+{
+    "name": "camera_input",
+    "maps": [
+        {
+            "name": "Camera_Drone",
+            "id": "8744a014-1c21-41fc-83df-46bbee0b69ed",
+            "actions": [
+                {
+                    "name": "TakeScreenshot",
+                    "type": "Button",
+                    "id": "a52c8a5d-f3cd-4b5e-9407-425c525d8a0f",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Tilt",
+                    "type": "PassThrough",
+                    "id": "9268dfa9-19c6-4a3b-8c69-ca17bbcf4032",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": ""
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "79503f59-9066-4015-85f6-12db9afbd110",
+                    "path": "<Keyboard>/#(T)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TakeScreenshot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "1D Axis",
+                    "id": "a9055ba9-d40e-4f70-9fe3-fe962890404d",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Tilt",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "positive",
+                    "id": "c470bdfe-5313-4a16-b372-3db9dc777b86",
+                    "path": "<Keyboard>/i",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Tilt",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "negative",
+                    "id": "ec2a7591-bfb5-4bde-921b-4d5e5c2b395b",
+                    "path": "<Keyboard>/k",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Tilt",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
