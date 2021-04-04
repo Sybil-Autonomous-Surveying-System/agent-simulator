@@ -3,7 +3,7 @@ import json
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 8080
-info = {"vector":[10,15,20]}
+info = {"vector":[-40,46,15]}
 
 print("UDP target IP: %s" % UDP_IP)
 print("UDP target port: %s" % UDP_PORT)
