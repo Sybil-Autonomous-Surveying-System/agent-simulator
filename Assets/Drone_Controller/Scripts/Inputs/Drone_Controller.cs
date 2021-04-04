@@ -55,6 +55,9 @@ namespace Sybil
         private bool destinationBool = false;
         private bool softBlock = true;
         private bool destinationReached = true;
+
+        private Vector2 xzcoordStart;
+        private Vector2 xzcoordEnd;
         // Start is called before the first frame update
         void Start()
         {
@@ -105,17 +108,19 @@ namespace Sybil
             {
                 engine.UpdateEngine(rb, input);
             }
-            
+
         }
 
         // based on x,y,z coordinate to move to that specific location
         void directedControlOrchestrator()
-        {
+         {
             
             if (destinationBool && !destinationReached)
             {
                 Vector3 _direction = (new Vector3(destination.x,0, destination.z) - new Vector3 (rb.position.x,0,rb.position.z)).normalized;
+
                 Quaternion _lookRotation = Quaternion.LookRotation(_direction);
+                float angle = Quaternion.Angle(rb.rotation, _lookRotation);
                 if ((int)rb.position.y < destination.y)
                 {
                     input.Throttle = 1;
@@ -126,28 +131,25 @@ namespace Sybil
                 }
                 else if ((int)rb.position.y == destination.y)
                 {
-                    if (softBlock|| ((int)rb.position.x == destination.x) || ((int)rb.position.z == destination.z))
+                    input.Throttle = 0;
+                    if (angle != 0 && softBlock)
                     {
                         rb.angularVelocity = Vector3.zero;
                         rb.velocity = Vector3.zero;
-                        softBlock = false;
-                        input.Cyclic = new Vector2(0, 0);
-                        input.Pedals = 0;
-                    }
-                    input.Throttle = 0;
-                    if (_lookRotation.y > (rb.rotation.y + .005f))
-                    {
-                        input.Pedals = .3f;
-                    }
-                    else if (_lookRotation.y < (rb.rotation.y - .005f))
-                    {
-                        input.Pedals = -.3f;
+                        rb.rotation = (Quaternion.Slerp(rb.rotation, _lookRotation, Time.deltaTime * 0.8f));
                     }
                     else
-                    {
-                        input.Pedals = 0;
-                        if (((int)rb.position.x == destination.x) && ((int)rb.position.z == destination.z)) 
+                    { 
+                        if (softBlock)
                         {
+                            rb.angularVelocity = Vector3.zero;
+                            rb.velocity = Vector3.zero;
+                            softBlock = false;
+                        }
+                        if ((MathUtility.IsBetweenRange(Mathf.Abs(rb.position.x), Mathf.Abs(destination.x-0.5f), Mathf.Abs(destination.x + 0.5f))) 
+                            && MathUtility.IsBetweenRange(Mathf.Abs(rb.position.z), Mathf.Abs(destination.z - 0.5f), Mathf.Abs(destination.z + 0.5f))) 
+                        {
+                            //rb.freezeRotation = true;
                             rb.angularVelocity = Vector3.zero;
                             rb.velocity = Vector3.zero;
                             input.Cyclic = new Vector2(0, 0);
@@ -155,9 +157,10 @@ namespace Sybil
                         }
                         else
                         {
-                            input.Cyclic = new Vector2(0, 1);
+                            input.Cyclic = new Vector2(0, Mathf.Lerp(0.25f, (new Vector2(rb.position.x, rb.position.z) - xzcoordEnd).magnitude / xzcoordEnd.magnitude, Time.deltaTime * 50));
                         }
                     }
+
                 }
 
             }
@@ -166,7 +169,10 @@ namespace Sybil
                 if (cq.TryDequeue(out destination))
                 {
                     destinationReached = false;
-                    Debug.Log(destination);
+                    softBlock = true;
+                    xzcoordStart = new Vector2(rb.position.x, rb.position.z);
+                    xzcoordEnd = new Vector2(destination.x, destination.z);
+                    rb.freezeRotation = false;
                 }
             }
         }
@@ -181,7 +187,7 @@ namespace Sybil
             finalPitch = Mathf.Lerp(finalPitch, pitch, Time.deltaTime * lerpSpeed);
             finalRoll = Mathf.Lerp(finalRoll, roll, Time.deltaTime * lerpSpeed);
             finalYaw = Mathf.Lerp(finalYaw, yaw, Time.deltaTime * lerpSpeed);
-            Quaternion rot = Quaternion.Euler(finalPitch, finalYaw, finalRoll);
+            Quaternion rot = Quaternion.Euler(finalPitch, rb.rotation.eulerAngles.y, finalRoll);
             //torque instead but need to clamp it to prevent complete flip
             rb.MoveRotation(rot);
         }
@@ -191,7 +197,6 @@ namespace Sybil
         {
             while (true)
             {
-                Debug.Log("does continue to ruyn after destination chosen");
                 try
                 {
                     data = socket.Receive(ref ipAddressEndPoint);
