@@ -27,7 +27,6 @@ namespace Sybil
         [SerializeField] private float yawPower = 4F;
         [SerializeField] private float lerpSpeed = 2f;
         [SerializeField] private Camera_SaveShot cameraScreenShot;
-
         JsonVector desiredLocation;
 
         private Drone_Inputs input;
@@ -54,7 +53,7 @@ namespace Sybil
         private Vector3 destination;
         private bool destinationBool = false;
         private bool softBlock = true;
-        private bool destinationReached = true;
+        public static bool destinationReached = true;
 
         private Vector2 xzcoordStart;
         private Vector2 xzcoordEnd;
@@ -65,17 +64,6 @@ namespace Sybil
             engines = GetComponentsInChildren<Engine>().ToList<Engine>();
             // myCamera = GameObject.FindWithTag("drone_cam").GetComponent<Camera>();
             myCamera = Camera.main;
-
-
-
-            //UDP
-            cq = new ConcurrentQueue<Vector3>();
-
-            ipAddressEndPoint = new IPEndPoint(IPAddress.Any, 8080);
-
-            socket = new UdpClient(ipAddressEndPoint);
-            thread = new Thread(performMovement);
-            thread.Start();
         }
 
         // Update is called once per frame
@@ -166,13 +154,17 @@ namespace Sybil
             }
             else
             {
-                if (cq.TryDequeue(out destination))
+                if (UDP_Connect.cqDestinations != null)
                 {
-                    destinationReached = false;
-                    softBlock = true;
-                    xzcoordStart = new Vector2(rb.position.x, rb.position.z);
-                    xzcoordEnd = new Vector2(destination.x, destination.z);
-                    rb.freezeRotation = false;
+                    if (UDP_Connect.cqDestinations.TryDequeue(out destination))
+                    {
+                        destinationReached = false;
+                        softBlock = true;
+                        xzcoordStart = new Vector2(rb.position.x, rb.position.z);
+                        xzcoordEnd = new Vector2(destination.x, destination.z);
+                        destinationBool = true;
+                        rb.freezeRotation = false;
+                    }
                 }
             }
         }
@@ -193,32 +185,6 @@ namespace Sybil
         }
 
 
-        void performMovement()
-        {
-            while (true)
-            {
-                try
-                {
-                    data = socket.Receive(ref ipAddressEndPoint);
-                    dataString = Encoding.UTF8.GetString(data);
-
-                    JsonVector jsonvector = JsonConvert.DeserializeObject<JsonVector>(dataString);
-                    //input.Cyclic = new Vector2(input.Cyclic.x,1);
-                    //
-                    //List<string> jsonToArray = JsonConvert.DeserializeObject<List<string>>(dataString);
-                    var jsonData = JsonConvert.DeserializeObject<Dictionary<string, List<float>>>(dataString);
-
-                    //List<string> vector = jsonData["vector"][0].Value<List<string>>();
-                    Vector3 enqueuedestination = new Vector3(jsonData["vector"][0], jsonData["vector"][1], jsonData["vector"][2]);
-                    destinationBool = true;
-                    cq.Enqueue(enqueuedestination);
-                    Debug.Log(enqueuedestination);
-                }
-                catch (SocketException ex)
-                {
-                    Debug.Log(ex.Message);
-                }
-            }
-        }
+        
     }
 }

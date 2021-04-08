@@ -15,6 +15,8 @@ public class Camera_SaveShot : MonoBehaviour
     private int width;
     private int height;
     private string pathName = "./Screenshot";
+    private Vector3 lookat;
+    private Vector3 latestLookAt;
     private void Awake()
     {
         myCamera = GetComponent<Camera>();
@@ -65,7 +67,7 @@ public class Camera_SaveShot : MonoBehaviour
             //Y have to clamp and lerp
             float tilt = input.Tilt * maxTilt;
             // last value is lerpspeed
-            finalTilt = Mathf.Lerp(finalTilt, tilt, Time.deltaTime );
+            finalTilt = Mathf.Lerp(finalTilt, tilt, Time.deltaTime);
             //Euler rot = Quaternion.Euler(0f, finalTilt, 0f);
             //myCamera.transform.Rotate(Vector3.right, finalTilt);
 
@@ -85,7 +87,31 @@ public class Camera_SaveShot : MonoBehaviour
             shotNextFrame = true;
             input.TakeScreenshot = 0;
         };
+        if(Sybil.Drone_Controller.destinationReached && UDP_Connect.takePhoto)
+        {
+            TakeScreenshot();
+            shotNextFrame = true;
+            input.TakeScreenshot = 0;
+            UDP_Connect.takePhoto = false;
+        }
         HandleTilt();
+        lookAtPoint();
+    }
+
+    public void lookAtPoint()
+    {
+        if (UDP_Connect.cqDestinations != null)
+        {
+            if (UDP_Connect.cqLookAt.TryDequeue(out lookat))
+            {
+                myCamera.transform.LookAt(lookat);
+                latestLookAt = lookat;
+            }
+            else
+            {
+                myCamera.transform.LookAt(latestLookAt);
+            }
+        }
     }
     public void LateUpdate()
     {
